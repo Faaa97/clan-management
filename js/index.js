@@ -182,18 +182,30 @@ function readFile(input) {
   } 
 }
 
-document.querySelector("#acero-button").addEventListener('click', () => {
-  let titleRow = ['User', 'date', 'gold', 'acero', 'cobre', 'energia'];
-  let name = prompt('Put the name to search');
-  let query = `?q={"User" : {"$regex" : "*${name}*"}`;
+document.querySelector("#acero-button").addEventListener('click', aceroHandler);
 
-  storage.query(query, (data) => {
+function aceroHandler(){
+  let titleRow = ['User', 'date', 'gold', 'acero', 'cobre', 'energia'];
+
+  if(!database) {
+    getDatabase();
+    setTimeout(aceroHandler, 500);
+    return;
+  }
+  
+  let name = prompt('Put the name to search');
+  let result = selectFrom(name);
+
+  showTable(titleRow, result, 'Result');
+  showChart(titleRow, result);
+}
+
+function getDatabase() {
+  storage.fetch((data) => {
     console.log('fetched?', data);
-    showTable(titleRow, data, 'Database');
     database = data;
   });
-
-});
+}
 
 document.querySelector("#output-button").addEventListener('click', () => {
   let titleRow = ['User', 'date', 'gold', 'acero', 'cobre', 'energia'];
@@ -211,10 +223,7 @@ document.querySelector("#input-button").addEventListener('click', inputHandler);
 function inputHandler () {
 //Use persisted data and upload everything new
   if(!database){
-    console.log('downloading database...');
-    storage.fetch((data) => {
-      database = data;
-    });
+    getDatabase();
     setTimeout(inputHandler, 500);
     return;
   }
@@ -261,6 +270,18 @@ function parseData(data) {
 
 function showChart() {
   
+}
+
+function selectFrom(name) {
+
+  let result = null;
+  if(database) {
+    result = database.filter((item) => {
+      return item['User'] == name;
+    });
+  }
+
+  return result;
 }
 
 function showTable(titleRow, entries, name) {
