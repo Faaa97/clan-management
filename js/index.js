@@ -3,6 +3,11 @@ const DATABASE_URL = 'https://sunset-a749.restdb.io/rest/donations';
 const USERS_TABLE = 'users';
 const DAY_TABLE = 'day';
 
+google.charts.load('current',{packages:['corechart']});
+google.charts.setOnLoadCallback(() => {
+  console.log('google charts loaded!');
+});
+
 //// Get key
 
 let apikey = null;
@@ -24,7 +29,7 @@ if(apikey == null) {
 
 let timespan = document.querySelector('#time');
 function updateTime() {
-  let date = new Date();
+  let date = getUTC8Date();
   let hours = date.getHours().toString().padStart(2, '0');
   let minutes = date.getMinutes().toString().padStart(2, '0');
   let seconds = date.getSeconds().toString().padStart(2, '0');
@@ -66,7 +71,7 @@ var storage = {
       callback(entries);
     });
   },
-  save: function(entry) {
+  save: function(entry, err) {
     console.log("saving", entry);
     $.ajax({
       type: "POST",
@@ -76,7 +81,9 @@ var storage = {
     }).done(function(result) {
       console.log("Saved", result);
       entry._id = result._id;
-    });
+    }).fail(function(result) {
+      err(result);
+    })
   },
   update: function(entry) {
     console.log("updating", entry);
@@ -141,15 +148,19 @@ function constructEntry(format, row) {
   return obj;
 }
 
-function getToday() {
-  /*let date = new Date();
-  const day = date.getDate().toString().padStart(2, 0);
-  const month = (date.getMonth() + 1).toString().padStart(2, 0);
-  const year = date.getFullYear();
+function getUTC8Date() {
+  let utcDate = new Date();
+  utcDate.setHours(utcDate.getHours() + 8);
+  return utcDate;
+}
 
-  return `${day}/${month}/${year}`;*/
-  let utcDate = new Date(); 
-  return new Date(utcDate.toDateString());
+function getToday() {
+  let utcDate = getUTC8Date();
+  utcDate.setHours(0);
+  utcDate.setMinutes(0);
+  utcDate.setSeconds(0);
+  utcDate.setMilliseconds(0);
+  return utcDate;
 }
 
 function readFile(input) {  
@@ -173,6 +184,7 @@ function readFile(input) {
 
       rawData.forEach((entry) => {
         let e = constructEntry(titleRow, entry)
+        console.log(e);
         data.push(e);
       })
 
@@ -197,25 +209,22 @@ function aceroHandler(){
   let result = selectFrom(name);
 
   showTable(titleRow, result, 'Result');
-  showChart(titleRow, result);
+  showDarkSteelChart(name, result);
 }
 
-function getDatabase() {
+function getDatabase(callback) {
   storage.fetch((data) => {
-    console.log('fetched?', data);
+    console.log('Getting database...', data);
     database = data;
+    if(callback) callback(data);
   });
 }
 
 document.querySelector("#output-button").addEventListener('click', () => {
   let titleRow = ['User', 'date', 'gold', 'acero', 'cobre', 'energia'];
-
-  storage.fetch((data) => {
-    console.log('fetched?', data);
+  getDatabase((data) => {
     showTable(titleRow, data, 'Database');
-    database = data;
   });
-
 });
 
 document.querySelector("#input-button").addEventListener('click', inputHandler);
@@ -233,11 +242,13 @@ function inputHandler () {
     persisted_data.forEach((entry) => {
 
       if(isInDatabase(entry)){
-        console.log('entry in database!')
+        console.log('entry in database! ' + entry)
         return;
       }
 
-      storage.save(entry);
+      storage.save(entry, (err) => {
+        console.log(err);
+      });
       database.push(entry);
     });
 
@@ -247,9 +258,11 @@ function inputHandler () {
 
 function isInDatabase(entry) {
   for(let i = 0; i < database.length; i++) {
-    const sameName = database[i]['User'] === entry['User'];
-    const sameDate = new Date(database[i]['date']).getTime() == new Date(entry['date']).getTime(); // need to check this
+    const sameName = database[i]['Usuario'] === entry['Usuario'];
+    const sameDate = new Date(database[i]['date']).getTime() === new Date(entry['date']).getTime(); // need to check this
     
+    console.log(sameName, sameDate);
+
     if(sameDate && sameName) {
       return true;
     }
@@ -261,14 +274,66 @@ function isInDatabase(entry) {
 function parseData(data) {
   let csvData = [];
   let lbreak = data.split("\n");
-  lbreak.forEach(res => {
+  lbreak = lbreak.slice(2);
+  lbreak[0] = 'Usuario;cobre;acero;energia;oro';
+  lbreak = lbreak.slice(0, -3);
+
+  lbreak.forEach((res, index) => {
     res = res.replace('\r', '');
-    csvData.push(res.split(","));
+    let split = res.split(";")
+    split = split.filter((element, index) => {
+      if(index > 5) return false;
+      return element != "";
+    })
+
+    if(index == 0) {
+      csvData.push(split);
+      return;
+    }
+
+    split = split.map((item, index) => {
+      if(index > 0 && index <= 4) {
+        return parseInt(item.replace(".", ""));
+      }
+      return item;
+    });
+    csvData.push(split);
   });
   return csvData;
 }
 
-function showChart() {
+function showDarkSteelChart(name, data) {
+  let options = {
+    title: 'Acero oscuro donado ' + name,
+    hAxis: {title: 'Dia'},
+    vAxis: {title: 'Acero oscuro'},
+    legend: 'none',
+    bar: {groupWidth: "35%"},
+  };
+
+  let convertedData = new google.visualization.DataTable();
+  convertedData.addColumn('date', 'Dia');
+  convertedData.addColumn('number', 'Cantidad');
+
+  data.forEach((entry) => {
+    convertedData.addRow([new Date(entry['date']), entry['acero']]);
+  });
+
+  showColumnChart(options, convertedData);
+}
+
+function showColumnChart(options, data) {
+  let output = document.querySelector("#output-table");
+  makeExtraTitle(output, 'Chart');
+
+console.log(data);
+console.log(options);
+
+  //let datatable = google.visualization.arrayToDataTable(data);
+let datatable = data;
+
+  var chart = new google.visualization.ColumnChart(output);
+  chart.draw(datatable, options);
   
 }
 
@@ -284,10 +349,15 @@ function selectFrom(name) {
   return result;
 }
 
-function showTable(titleRow, entries, name) {
+function wipeOutputHTML() {
   let output = document.querySelector("#output-table");
   output.classList = 'text-center';
   output.innerHTML = '';
+}
+
+function showTable(titleRow, entries, name) {
+  let output = document.querySelector("#output-table");
+
   makeExtraTitle(output, name);
   let table = document.createElement("table");
   table.classList = "table";

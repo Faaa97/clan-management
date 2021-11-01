@@ -9,22 +9,42 @@
 </head>
 
 <body>
-  <h1>Clan Management</h1>
   <div class="container">
-    Time = <span id=time></span>
+    <div class="row">
+      <div class="col-sm"><h1>Clan Management</h1></div>
+      <div class="col-sm"><h3>Time = <span id=time></span></h3></div>
+    </div>
   </div>
   <div class="container">
     <div class="container">
-      <input type="file" id="file-input" onChange="readFile(this)"/>
-      <button id="input-button" type="button" class="btn btn-primary">Input</button>
-      <button id="output-button" type="button" class="btn btn-primary">Output</button>
-      <button id="acero-button" type="button" class="btn btn-secondary">Acero</button>
+      <div class="row">
+        <div class="col-sm">
+          <input type="file" id="file-input" onChange="readFile(this)"/>
+        </div>
+        <div class="col-sm">
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <div class="input-group-text">
+                <input type="checkbox">
+              </div>
+            </div>
+            <input type="date" class="form-control">
+          </div>
+        </div>
+        <div class="col-sm">
+          <button id="input-button" type="button" class="btn btn-primary">Input</button>
+          <button id="output-button" type="button" class="btn btn-primary">Output</button>
+        </div>
+      </div>
+      <div class="btn-group" role="group" aria-label="Basic example">
+        <button id="acero-button" type="button" class="btn btn-secondary">Acero</button>
+        <button id="gold-button" type="button" class="btn btn-secondary">Oro</button>
+        <button id="cobre-button" type="button" class="btn btn-secondary">Cobre</button>
+        <button id="energia-button" type="button" class="btn btn-secondary">Energía</button>
+      </div>
     </div>
-    <div id="output-chart" class="container">
-    </div>
-    <div id="output-table" class="container">
-
-    </div>
+    <div id="output-chart" class="container"></div>
+    <div id="output-table" class="container"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
