@@ -43,16 +43,6 @@ let persisted_data = null;
 
 let database = null;
 
-
-function constructLocalTable (name) {
-  return {
-    name: name,
-    entries: [],
-  };
-}
-
-
-
 $.ajaxPrefilter(function(options) {
   if (!options.beforeSend) {
     options.beforeSend = function(xhr) {
@@ -144,7 +134,7 @@ function constructEntry(format, row) {
     obj[entry] = row[index];
   });
 
-  obj['date'] = /*new Date();*/getToday();
+  obj['date'] = getToday();
   return obj;
 }
 
@@ -199,13 +189,18 @@ function aceroHandler(){
   let titleRow = ['Usuario', 'date', 'oro', 'acero', 'cobre', 'energia'];
 
   if(!database) {
-    getDatabase();
-    setTimeout(aceroHandler, 500);
+    getDatabase(() => {
+      console.log('calling again...');
+      aceroHandler();
+    });
+    console.log('halting...');
     return;
   }
   
   let name = prompt('Put the name to search');
   let result = selectFrom(name);
+
+  console.log(result);
 
   showTable(titleRow, result, 'Result');
   showDarkSteelChart(name, result);
@@ -231,13 +226,13 @@ document.querySelector("#input-button").addEventListener('click', inputHandler);
 function inputHandler () {
 //Use persisted data and upload everything new
   if(!database){
-    getDatabase();
-    setTimeout(inputHandler, 500);
+    getDatabase(() => {
+      inputHandler();
+    });
     return;
   }
 
   if(persisted_data) {
-    // TODO: Make each entry try to match a entry in database (so we don't have duplicates?), keys user/day
     persisted_data.forEach((entry) => {
 
       if(isInDatabase(entry)){
@@ -252,6 +247,7 @@ function inputHandler () {
     });
 
     persisted_data = null;
+    wipeOutputHTML();
   }
 }
 
@@ -268,7 +264,6 @@ function isInDatabase(entry) {
   }
   return false;
 }
-
 
 function parseData(data) {
   let csvData = [];
@@ -302,12 +297,17 @@ function parseData(data) {
 }
 
 function showDarkSteelChart(name, data) {
+
+  let resolution = getResolution();
+
   let options = {
-    title: 'Acero oscuro donado ' + name,
+    title: 'Acero oscuro donado por ' + name,
     hAxis: {title: 'Dia'},
     vAxis: {title: 'Acero oscuro'},
     legend: 'none',
     bar: {groupWidth: "35%"},
+    width: resolution.width * 0.8,
+    height: resolution.height * 0.6,
   };
 
   let convertedData = new google.visualization.DataTable();
@@ -325,23 +325,16 @@ function showColumnChart(options, data) {
   let output = document.querySelector("#output-table");
   makeExtraTitle(output, 'Chart');
 
-console.log(data);
-console.log(options);
-
-  //let datatable = google.visualization.arrayToDataTable(data);
-let datatable = data;
-
   var chart = new google.visualization.ColumnChart(output);
-  chart.draw(datatable, options);
-  
+  chart.draw(data, options);
 }
 
 function selectFrom(name) {
-
   let result = null;
+  
   if(database) {
     result = database.filter((item) => {
-      return item['User'] == name;
+      return item['Usuario'] == name;
     });
   }
 
@@ -396,6 +389,13 @@ function showTable(titleRow, entries, name) {
 
   table.appendChild(tbody);
   output.appendChild(table);
+}
+
+function getResolution() {
+  return {
+    height: window.screen.availHeight,
+    width: window.screen.availWidth,
+  };
 }
 
 function appendColumn(to, data) {
