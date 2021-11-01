@@ -14,12 +14,10 @@ let apikey = null;
 
 if(apikey == null) {
   let key = $.cookie('apikey');
-  console.log(key);
   if(!key) {
     key = prompt('Put your key');
     if(key && key != ""){
       $.cookie('apikey', key);
-      console.log($.cookie('apikey'));
       apikey = key;
     }
   } else {
@@ -70,6 +68,7 @@ var storage = {
       data: JSON.stringify(entry)
     }).done(function(result) {
       console.log("Saved", result);
+      // TODO: Show notification that request was successful
       entry._id = result._id;
     }).fail(function(result) {
       err(result);
@@ -172,8 +171,7 @@ function readFile(input) {
       let data = [];
 
       rawData.forEach((entry) => {
-        let e = constructEntry(titleRow, entry)
-        console.log(e);
+        let e = constructEntry(titleRow, entry);
         data.push(e);
       })
 
@@ -190,17 +188,13 @@ function aceroHandler(){
 
   if(!database) {
     getDatabase(() => {
-      console.log('calling again...');
       aceroHandler();
     });
-    console.log('halting...');
     return;
   }
   
   let name = prompt('Put the name to search');
   let result = selectFrom(name);
-
-  console.log(result);
 
   showTable(titleRow, result, 'Result');
   showDarkSteelChart(name, result);
@@ -208,7 +202,6 @@ function aceroHandler(){
 
 function getDatabase(callback) {
   storage.fetch((data) => {
-    console.log('Getting database...', data);
     database = data;
     if(callback) callback(data);
   });
@@ -235,8 +228,12 @@ function inputHandler () {
   if(persisted_data) {
     persisted_data.forEach((entry) => {
 
+      if(shouldOverrideDate()) {
+        entry['date'] = getCustomDate();
+      }
+
       if(isInDatabase(entry)){
-        console.log('entry in database! ' + entry)
+        console.log('entry in database! ' + entry);
         return;
       }
 
@@ -251,12 +248,20 @@ function inputHandler () {
   }
 }
 
+function getCustomDate() {
+  let input = document.querySelector("#input-date");
+  return new Date(input.value);
+}
+
+function shouldOverrideDate() {
+  let checkbox = document.querySelector("#input-date-checkbox");
+  return checkbox.value;
+}
+
 function isInDatabase(entry) {
   for(let i = 0; i < database.length; i++) {
     const sameName = database[i]['Usuario'] === entry['Usuario'];
-    const sameDate = new Date(database[i]['date']).getTime() === new Date(entry['date']).getTime(); // need to check this
-    
-    console.log(sameName, sameDate);
+    const sameDate = new Date(database[i]['date']).getTime() === new Date(entry['date']).getTime();
 
     if(sameDate && sameName) {
       return true;
