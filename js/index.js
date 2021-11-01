@@ -172,10 +172,9 @@ function readFile(input) {
         size:0,
         dataFile:[]
       };    
-      console.log(e);
       obj_csv.size = e.total;
       obj_csv.dataFile = e.target.result;
-      console.log(obj_csv.dataFile);
+
       let rawData = parseData(obj_csv.dataFile);
       
       let titleRow = rawData[0];
@@ -197,7 +196,7 @@ function readFile(input) {
 document.querySelector("#acero-button").addEventListener('click', aceroHandler);
 
 function aceroHandler(){
-  let titleRow = ['User', 'date', 'gold', 'acero', 'cobre', 'energia'];
+  let titleRow = ['Usuario', 'date', 'oro', 'acero', 'cobre', 'energia'];
 
   if(!database) {
     getDatabase();
@@ -221,7 +220,7 @@ function getDatabase(callback) {
 }
 
 document.querySelector("#output-button").addEventListener('click', () => {
-  let titleRow = ['User', 'date', 'gold', 'acero', 'cobre', 'energia'];
+  let titleRow = ['Usuario', 'date', 'oro', 'acero', 'cobre', 'energia'];
   getDatabase((data) => {
     showTable(titleRow, data, 'Database');
   });
